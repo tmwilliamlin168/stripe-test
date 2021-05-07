@@ -1,11 +1,8 @@
-import Head from 'next/head';
+import stripePromise from '../stripePromise';
 
 export default function Checkout() {
     return (
         <>
-            <Head>
-                <script src="https://js.stripe.com/v3/"></script>
-            </Head>
             <div className="product">
                 <img src="https://i.imgur.com/EHyR2nP.png" alt="The cover of Stubborn Attachments" />
                 <div className="description">
@@ -14,23 +11,22 @@ export default function Checkout() {
                 </div>
             </div>
             <button
-                onClick={() => {
-                    const stripe = Stripe("pk_test_51IoUnVCXeo1F5iZheFRAOMs2wrkrGtSdpI6yHSarTrwt5U7SiLU6Cyx84d1ySnaw9ui1tRdQFPckXeag3y0U3E3Y00YcDgHm1p");
-                    fetch("/api/create-checkout-session", {
+                onClick={async () => {
+                    const stripe = await stripePromise;
+                    const response = await fetch("/api/create-checkout-session", {
                         method: "POST",
-                    }).then(res => {
-                        return res.json();
-                    }).then(session => {
-                        return stripe.redirectToCheckout({ sessionId: session.id });
-                    }).then(res => {
-                        // If redirectToCheckout fails due to a browser or network
-                        // error, you should display the localized error message to your
-                        // customer using error.message.
-                        if (res.error)
-                            alert(res.error.message);
-                    }).catch(function (error) {
-                        console.error("Error:", error);
                     });
+                    const session = await response.json();
+                    // When the customer clicks on the button, redirect them to Checkout.
+                    const result = await stripe.redirectToCheckout({
+                        sessionId: session.id,
+                    });
+                    if (result.error) {
+                        // If `redirectToCheckout` fails due to a browser or network
+                        // error, display the localized error message to your customer
+                        // using `result.error.message`.
+                        alert(result.error.message);
+                    }
                 }}
             >
                 Checkout
